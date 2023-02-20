@@ -121,13 +121,30 @@ public class UserController {
 	}
 	
 
+	//to be changed from User to UserAuthRequest object
+	//which is a class of only user email and password
+    @PostMapping("/users/loginuser")
+    public ResponseEntity<User> login(@RequestBody User user, HttpSession session) {
+        // Check if the user is authenticated
+    	User userDBData = userRepo.findByEmail(user.getEmail()).get(0);
+    	if(userDBData==null) {
+    		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    	}
+    	if (user.getEmail().equals(userDBData.getEmail()) && user.getPassword().equals(userDBData.getPassword())) {
+            // Set user as authenticated by adding user object to the session            
+            session.setAttribute("userEmail", user.getEmail());
+        }
+    	return new ResponseEntity<>(HttpStatus.OK);
+       
+    }
+
+    
     @PostMapping("/users/logoutuser")
     public ResponseEntity<User> logoutUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
         }
-//        return ResponseEntity.ok().build();
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
