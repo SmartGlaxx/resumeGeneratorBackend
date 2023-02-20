@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.resumegenerator.model.User;
 import com.example.resumegenerator.model.UserRepository;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 @CrossOrigin(origins="http://localhost:8081")
 @RequestMapping("/api")
 @RestController
@@ -29,7 +32,7 @@ public class UserController {
 	@Autowired
 	UserRepository userRepo;
 	
-	@GetMapping("/users")
+	@GetMapping("/users/list")
 	public ResponseEntity <List<User>> getAllUsers(@RequestParam(required=false) String firstname){
 		try {
 			List<User> users = new ArrayList<>();
@@ -57,8 +60,8 @@ public class UserController {
 		}
 	}
 	
-	@PostMapping("/users")
-	public ResponseEntity<User> createUser(@RequestBody User user){
+	@PostMapping("/users/signup")
+	public ResponseEntity<User> signUpUser(@RequestBody User user){
 		try {
 			User newUser = userRepo.save(new User(user.getFirstName(), user.getLastName(), user.getEmail(), user.getPassword()));
 			return new ResponseEntity<>(newUser, HttpStatus.CREATED);
@@ -66,15 +69,31 @@ public class UserController {
 			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+	@PostMapping("/users/signin")
+	public ResponseEntity<User> signInUser(@RequestBody User user){
+		try {
+			String userEmail = user.getEmail();
+			String password = user.getPassword();
+			User storedUserData = userRepo.findByEmail(userEmail).get(0);
+			
+			if(storedUserData.getPassword().equalsIgnoreCase(password)) {
+				return new ResponseEntity<>(storedUserData, HttpStatus.OK);
+			}else {
+				return new ResponseEntity<>(null, HttpStatus.OK);
+			}	
+			
+		}catch(Exception e) {
+			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 	
-	@PutMapping("/users/{id}")
+	@PutMapping("/users/update/{id}")
 	public ResponseEntity<User> updateUser(@RequestBody User newUser, @PathVariable long id){
 		try {
 			Optional <User> user = userRepo.findById(id);
 			if(user == null) {
 				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 			}
-//			User oldUserData = user.get();
 			User newUserData = user.get();
 			newUserData.setFirstName(newUser.getFirstName());
 			newUserData.setLastName(newUser.getLastName());
@@ -87,7 +106,7 @@ public class UserController {
 		}
 	}
 	
-	@DeleteMapping("/users/{id}")
+	@DeleteMapping("/users/delete/{id}")
 	public ResponseEntity<User> deleteUser(@PathVariable long id){
 		try {
 			Optional <User> user = userRepo.findById(id);
@@ -101,8 +120,16 @@ public class UserController {
 		}
 	}
 	
-	
-	
-	
+
+    @PostMapping("/users/logoutuser")
+    public ResponseEntity<User> logoutUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+//        return ResponseEntity.ok().build();
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
 	
 }
